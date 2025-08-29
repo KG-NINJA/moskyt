@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultChartCanvas = document.getElementById('resultChart');
 
   // ========= Constants =========
-  const SITE_URL = 'https://kg-ninja.github.io/FMMosquit/';
+  const SITE_URL = 'https://kg-ninja.github.io/moskyt/';
   const locale = navigator.language || 'Unknown';
   const UA = navigator.userAgent || 'UA';
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
