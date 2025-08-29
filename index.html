@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Mosquito Repellent | Ultrasonic Demo</title>
+    <meta name="description" content="An ultrasonic tone demo using the Web Audio API" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2306b6d4'/%3E%3Cpath d='M50 22 L62 40 L50 36 L38 40 Z' fill='white'/%3E%3Cpath d='M38 60 Q50 70 62 60' stroke='white' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+    <style>
+      /* クリック遮り対策 */
+      #mosqWrap { pointer-events: none; }
+      .controls { position: relative; z-index: 10; }
+    </style>
+  </head>
+  <body>
+    <header class="container">
+      <h1>Mosquito Repellent (Demo)</h1>
+      <p class="muted">Experimental ultrasonic tone demo using the Web Audio API. Effectiveness is not guaranteed.</p>
+    </header>
+
+    <main class="container card">
+      <section class="controls">
+        <div class="row">
+          <button id="toggleBtn" class="primary">Play</button>
+          <span id="statusBadge" class="badge off">Stopped</span>
+          <select id="modeSelect" aria-label="Mode">
+            <option value="tone">Tone</option>
+            <option value="fm">FM (Mosquito)</option>
+          </select>
+          <label class="muted small" style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="dbgAudibleFM" /> Audible FM Debug
+          </label>
+          <button id="btnTest" class="secondary" title="Play a 1 kHz test tone for 1 second">Test Tone (1 kHz)</button>
+        </div>
+
+        <div class="field">
+          <label for="freq">Frequency: <span id="freqVal">19000</span> Hz</label>
+          <input id="freq" type="range" min="16000" max="22000" step="100" value="19000" />
+          <p class="help">Typically 17–22 kHz is near the ultrasonic range. Perception varies by device and hearing.</p>
+        </div>
+
+        <div class="field">
+          <label for="gain">Volume: <span id="gainVal">20</span>%</label>
+          <input id="gain" type="range" min="0" max="100" step="1" value="20" />
+          <p class="help">Use moderate volume. Avoid excessive levels to protect hearing and others around you.</p>
+        </div>
+
+        <section class="field">
+          <h3>FM Enhancements</h3>
+          <div class="row" style="gap:8px; flex-wrap:wrap; align-items:center;">
+            <label class="small">Carrier
+              <select id="carrierWave" aria-label="Carrier wave">
+                <option value="sine">sine</option>
+                <option value="square" selected>square</option>
+                <option value="sawtooth">sawtooth</option>
+                <option value="triangle">triangle</option>
+              </select>
+            </label>
+            <label class="small">Modulator
+              <select id="modWave" aria-label="Modulator wave">
+                <option value="sine" selected>sine</option>
+                <option value="square">square</option>
+                <option value="sawtooth">sawtooth</option>
+                <option value="triangle">triangle</option>
+              </select>
+            </label>
+            <label class="small" style="display:flex;align-items:center;gap:6px;">
+              Rate: <span id="fmRateVal">60</span> Hz
+              <input id="fmRate" type="range" min="0.1" max="200" step="0.1" value="60" />
+            </label>
+            <label class="small" style="display:flex;align-items:center;gap:6px;">
+              Depth: <span id="fmDepthVal">5%</span>
+              <input id="fmDepth" type="range" min="0" max="3000" step="10" value="0" />
+            </label>
+            <label class="small" style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="distEnable" /> Distortion
+            </label>
+            <label class="small" style="display:flex;align-items:center;gap:6px;">
+              Drive: <span id="distDriveVal">0.0</span>
+              <input id="distDrive" type="range" min="0" max="1" step="0.01" value="0" />
+            </label>
+          </div>
+          <p class="help">Increase Rate/Depth or non-sine waves to enrich harmonics. Distortion adds additional overtones.</p>
+        </section>
+
+        <section class="vote">
+          <h2>Your Experience</h2>
+          <div class="chip-row">
+            <button id="btnGood" class="chip good">Worked</button>
+            <button id="btnBad" class="chip bad">No Effect</button>
+            <button id="btnUnknown" class="chip">Unknown</button>
+            <button id="btnShare" class="secondary" title="Share the result">Share</button>
+            <button id="btnTweet" class="secondary" title="Tweet on X (Twitter)">Tweet</button>
+          </div>
+          <p id="rtStatus" class="muted small"></p>
+        </section>
+
+        <section class="mosquito-stage" aria-label="Mosquito animation">
+          <div id="mosqWrap" class="mosq-wrap">
+            <div class="mosq m1"></div>
+            <div class="mosq m2"></div>
+            <div class="mosq m3"></div>
+          </div>
+        </section>
+
+      <section class="meter">
+        <h2>Level Meter</h2>
+        <canvas id="levelMeter" width="600" height="28" aria-label="Audio level"></canvas>
+        <p class="muted small">Instantaneous output level (approximation). High frequencies may read lower due to device limitations.</p>
+      </section>
+
+      <section class="charts">
+        <h2>Realtime Tally</h2>
+        <canvas id="resultChart" height="140"></canvas>
+      </section>
+      <p class="muted small" id="rtStatus">Local tally in progress (Firebase not set up)</p>
+      </section>
+
+      <section class="notes">
+        <h2>Notes</h2>
+        <ul>
+          <li>This is a technical demo; no guaranteed mosquito repellent effect.</li>
+          <li>Some devices/speakers cannot reproduce very high frequencies.</li>
+          <li>If you feel discomfort, stop immediately.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="container footer">
+      <small class="muted">© 2025 Mosquito Demo | Pure HTML/CSS/JS |
+        <a href="https://windsurf.com/refer?referral_code=gt4sy1t32bxdfvn9" target="_blank" rel="noopener noreferrer">Try Windsurf</a>
+        | <a href="https://buymeacoffee.com/kgninja" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
+      </small>
+    </footer>
+
+    <!-- Firebase (optional) & Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Provide your config at firebase-config.js (copied from example) -->
+    <script src="./firebase-config.js" defer></script>
+    <script src="./script.js"></script>
+  </body>
+</html>
